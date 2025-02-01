@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="two-fast-auth",
-    version="1.0.1",
+    version="1.0.2",
     packages=find_packages(
         include=[
             "two_fast_auth",

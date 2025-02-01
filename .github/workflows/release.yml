@@ -67,7 +67,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SECRET_NAME: DOCS_VERSION
-          SECRET_VALUE: ${${{ github.event.release.tag_name }}#v}
+          SECRET_VALUE: ${{ github.event.release.tag_name }}
 
       - name: Notify Success on Slack Channel
         uses: rennf93/good-comms@master
