@@ -6,7 +6,7 @@ keywords: release notes, two-fast-auth, two-factor authentication, middleware, a
 
 # Release Notes
 
-## v1.0.0 (2025-02-01)
+## v1.0.4 (2025-02-01)
 
 ### Features
 - Initial release of Two-Fast-Auth
