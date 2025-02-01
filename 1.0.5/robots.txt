@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://rennf93.github.io/two-fast-auth/sitemap.xml 
