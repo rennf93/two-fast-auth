@@ -64,8 +64,8 @@ jobs:
 
       - name: Run tests
         run: |
-          pip install pytest
-          pytest
+          pip install pytest pytest-cov httpx
+          pytest tests -v
 
       - name: Lint with flake8
         run: |
