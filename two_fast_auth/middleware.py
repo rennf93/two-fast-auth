@@ -59,7 +59,8 @@ class TwoFactorMiddleware(BaseHTTPMiddleware):
 
         # Verify 2FA code
         two_fa_code = request.headers.get(self.header_name)
-        if not two_fa_code or not TwoFactorAuth(user_secret).verify_code(two_fa_code):
+        auth = TwoFactorAuth(user_secret)
+        if not two_fa_code or not auth.verify_code(two_fa_code):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or missing 2FA code"
