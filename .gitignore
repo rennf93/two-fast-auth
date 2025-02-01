@@ -169,3 +169,12 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+manual_testing/
+
+# Python compiled files
+*.pyc
+*.pyo
+*.pyd
+
+# Custom
+.DS_Store

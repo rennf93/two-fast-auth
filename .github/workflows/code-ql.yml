@@ -1,0 +1,108 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 1'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      matrix:
+        language: [python]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Send Initial Slack Message
+        id: send_initial_slack_codeql
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Started'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'Two Fast Auth - CodeQL'
+          AUTHOR_LINK: 'https://github.com/rennf93/two-fast-auth'
+          AUTHOR_ICON: ':mag:'
+          TITLE: 'CodeQL Started'
+          TITLE_LINK: 'https://github.com/rennf93/two-fast-auth/actions'
+          MESSAGE: |
+            .
+            *DEPLOYMENT TRIGGERED CODEQL!*
+
+            Commit:
+              ${{ github.event.head_commit.message }}
+            .
+          COLOR: warning
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Notify Success on Slack Channel
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Success'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'Two Fast Auth - CodeQL'
+          AUTHOR_LINK: 'https://github.com/rennf93/two-fast-auth'
+          AUTHOR_ICON: ':gem:'
+          TITLE: 'CodeQL Successful'
+          TITLE_LINK: 'https://github.com/rennf93/two-fast-auth/actions'
+          MESSAGE: |
+            .
+            Commit message:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+            .
+          COLOR: good
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_codeql.outputs.SLACK_THREAD_TS }}
+
+      - name: Send Failure Notification to Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'Two Fast Auth - CodeQL'
+          AUTHOR_LINK: 'https://github.com/rennf93/two-fast-auth'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'CodeQL Failed'
+          TITLE_LINK: 'https://github.com/rennf93/two-fast-auth/actions'
+          MESSAGE: |
+            .
+            CodeQL failed for commit:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+
+            Please check the logs for more details.
+            .
+          COLOR: danger
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_codeql.outputs.SLACK_THREAD_TS }}

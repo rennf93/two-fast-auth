@@ -1,0 +1,169 @@
+name: Docs Update
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - '.mike.yml'
+      - 'README.md'
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_ANALYTICS_KEY: ${{ secrets.GOOGLE_ANALYTICS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Send Initial Slack Message
+        id: send_initial_slack_docs
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Started'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'Two Fast Auth - Docs Update'
+          AUTHOR_LINK: 'https://github.com/rennf93/two-fast-auth'
+          AUTHOR_ICON: ':books:'
+          TITLE: 'Docs Update Started'
+          TITLE_LINK: 'https://github.com/rennf93/two-fast-auth/actions'
+          MESSAGE: |
+            .
+            *DEPLOYMENT TRIGGERED DOCS UPDATE!*
+            .
+            Current Docs version:
+              ${{ secrets.DOCS_VERSION }}
+            .
+            Commit:
+              ${{ github.event.head_commit.message }}
+            .
+          COLOR: warning
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: |
+          pip install mkdocs-material
+          pip install "mkdocstrings[python]"
+          pip install mike
+          pip install yq
+
+      - name: Configure Git user
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+      - name: Get and Update Version
+        id: get_version
+        run: |
+          CURRENT_VERSION=$(yq -r '.aliases.latest' .mike.yml)
+
+          if [[ ! $CURRENT_VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Invalid version format in .mike.yml: $CURRENT_VERSION"
+            exit 1
+          fi
+          echo "CURRENT_VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+
+          if [[ -n "${{ secrets.DOCS_VERSION }}" ]]; then
+            STORED_VERSION=${{ secrets.DOCS_VERSION }}
+            echo "STORED_VERSION=$STORED_VERSION" >> $GITHUB_ENV
+          else
+            echo "::error::DOCS_VERSION secret not found"
+            exit 1
+          fi
+
+          if [[ "$CURRENT_VERSION" != "$STORED_VERSION" ]]; then
+            echo "::notice::Updating DOCS_VERSION from $STORED_VERSION to $CURRENT_VERSION"
+            echo "VERSION=$CURRENT_VERSION" >> $GITHUB_ENV
+            echo "UPDATE_SECRET=true" >> $GITHUB_ENV
+          else
+            echo "::notice::Versions match ($CURRENT_VERSION), no update needed"
+            echo "VERSION=$STORED_VERSION" >> $GITHUB_ENV
+            echo "UPDATE_SECRET=false" >> $GITHUB_ENV
+          fi
+
+      - name: Update Docs Version Secret
+        if: ${{ env.UPDATE_SECRET == 'true' }}
+        uses: rennf93/github-actions-secrets-mgmt@v1.5
+        with:
+          OWNER: ${{ github.repository_owner }}
+          REPOSITORY: ${{ github.repository }}
+          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SECRET_NAME: DOCS_VERSION
+          SECRET_VALUE: ${{ env.VERSION }}
+
+      - name: Deploy documentation
+        run: |
+          mike deploy --push ${{ env.VERSION }}
+          mike alias --update-aliases --push ${{ env.VERSION }} latest
+          mike set-default --push latest
+
+      - name: Deploy to GitHub Pages
+        run: |
+          mike list
+          git push origin gh-pages --force
+
+      - name: Notify Success on Slack Channel
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Success'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'Two Fast Auth - Docs Update'
+          AUTHOR_LINK: 'https://github.com/rennf93/two-fast-auth'
+          AUTHOR_ICON: ':gem:'
+          TITLE: 'Docs Update Successful'
+          TITLE_LINK: 'https://github.com/rennf93/two-fast-auth/actions'
+          MESSAGE: |
+            .
+            *Docs v${{ env.VERSION }} Update Successful!*
+            .
+            Commit message:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+            .
+          COLOR: good
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_docs.outputs.SLACK_THREAD_TS }}
+
+      - name: Send Failure Notification to Slack
+        if: failure()
+        uses: rennf93/good-comms@master
+        with:
+          SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
+          STATUS: 'Failed'
+          CHANNEL_ID: '${{ secrets.SLACK_CHANNEL }}'
+          AUTHOR_NAME: 'Two Fast Auth - Docs Update'
+          AUTHOR_LINK: 'https://github.com/rennf93/two-fast-auth'
+          AUTHOR_ICON: ':skull:'
+          TITLE: 'Docs Update Failed'
+          TITLE_LINK: 'https://github.com/rennf93/two-fast-auth/actions'
+          MESSAGE: |
+            .
+            *Docs v${{ env.VERSION }} Update Failed!*
+            .
+            Docs Update failed for commit:
+              ${{ github.event.head_commit.message }}
+
+            Commit URL:
+              ${{ github.event.head_commit.url }}
+
+            Please check the logs for more details.
+            .
+          COLOR: danger
+          SLACK_THREAD_TS: ${{ steps.send_initial_slack_docs.outputs.SLACK_THREAD_TS }}
