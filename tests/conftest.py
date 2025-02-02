@@ -1,3 +1,4 @@
+from cryptography.fernet import Fernet
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -62,3 +63,21 @@ def mock_user():
             self.is_authenticated = True
 
     return MockUser()
+
+
+@pytest.fixture
+def valid_encryption_key():
+    return Fernet.generate_key()
+
+
+@pytest.fixture
+def invalid_encryption_key():
+    return b"invalid_key_1234567890_"
+
+
+@pytest.fixture
+def encrypted_secret(valid_encryption_key):
+    return TwoFactorAuth.encrypt_secret(
+        "SECRETEXAMPLE",
+        valid_encryption_key
+    )

@@ -1,7 +1,15 @@
+from cryptography.fernet import (
+    Fernet,
+    InvalidToken
+)
 from io import BytesIO
 import secrets
 import pyotp
 import qrcode
+from typing import (
+    Optional,
+    Union
+)
 
 
 class TwoFactorAuth:
@@ -66,3 +74,57 @@ class TwoFactorAuth:
             secrets.token_urlsafe(code_length)
             for _ in range(count)
         )
+
+    @staticmethod
+    def encrypt_secret(
+        secret: str,
+        encryption_key: Optional[Union[str, bytes]] = None
+    ) -> str:
+        """Encrypt 2FA secret (optional)"""
+        if not secret:
+            raise ValueError("Secret cannot be empty")
+
+        if not encryption_key:
+            return secret
+
+        key_bytes = (
+            encryption_key
+            if isinstance(encryption_key, bytes)
+            else encryption_key.encode()
+        )
+
+        try:
+            cipher = Fernet(key_bytes)
+            return cipher.encrypt(
+                secret.encode()
+            ).decode()
+
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Encryption failed: {str(e)}") from e
+
+    @staticmethod
+    def decrypt_secret(
+        encrypted_secret: str,
+        encryption_key: Optional[Union[str, bytes]] = None
+    ) -> str:
+        """Decrypt 2FA secret (optional)"""
+        if not encrypted_secret:
+            raise ValueError("No secret to decrypt")
+
+        if not encryption_key:
+            return encrypted_secret
+
+        key_bytes = (
+            encryption_key
+            if isinstance(encryption_key, bytes)
+            else encryption_key.encode()
+        )
+
+        try:
+            cipher = Fernet(key_bytes)
+            return cipher.decrypt(
+                encrypted_secret.encode()
+            ).decode()
+
+        except (InvalidToken, ValueError) as e:
+            raise ValueError(f"Decryption failed: {str(e)}") from e

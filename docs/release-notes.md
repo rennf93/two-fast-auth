@@ -6,6 +6,11 @@ keywords: release notes, two-fast-auth, two-factor authentication, middleware, a
 
 # Release Notes
 
+## v1.1.0 (2025-02-02)
+
+### Features
+- Added support for custom 2FA secret encryption & decryption
+
 ## v1.0.5 (2025-02-01)
 
 ### Features
