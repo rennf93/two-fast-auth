@@ -24,8 +24,6 @@
 - **TOTP Verification**: Time-based one-time password validation
 - **Recovery Codes**: Secure recovery code generation and management
 - **Middleware Integration**: Easy integration with FastAPI routes
-- **Customizable Templates**: Flexible UI templates for 2FA setup and verification
-- **Session Management**: Built-in session tracking for 2FA validation
 
 ## Installation
 
@@ -38,18 +36,20 @@ pip install two-fast-auth
 
 ```python
 from fastapi import FastAPI
-from two_fast_auth import TwoFactorMiddleware, TwoFactorConfig
+from two_fast_auth import TwoFactorMiddleware, TwoFactorAuth
 
 app = FastAPI()
 
-config = TwoFactorConfig(
-    issuer_name="Your App Name",
-    excluded_paths=["/docs", "/redoc"],
-    qr_code_size=200,
-    recovery_codes_count=8
-)
+async def get_user_secret(user_id: str) -> str:
+    # Implement your logic to retrieve user's secret from database
+    return "user_stored_secret"  # Replace with actual DB lookup
 
-app.add_middleware(TwoFactorMiddleware, config=config)
+app.add_middleware(
+    TwoFactorMiddleware,
+    get_user_secret_callback=get_user_secret,
+    excluded_paths=["/docs", "/redoc"],
+    header_name="X-2FA-Code"
+)
 
 @app.get("/protected-route")
 async def protected_route():
@@ -58,31 +58,44 @@ async def protected_route():
 
 ## Configuration Options
 
-### TwoFactorConfig
+### TwoFactorAuth Parameters
 
 | Parameter           | Default      | Description                                                                 |
 |---------------------|--------------|-----------------------------------------------------------------------------|
-| `issuer_name`       | Required     | Name displayed in authenticator apps                                        |
-| `excluded_paths`    | []           | Paths that bypass 2FA verification                                          |
-| `qr_code_size`      | 200          | Size in pixels for generated QR codes                                       |
-| `recovery_codes_count` | 10      | Number of recovery codes to generate per user                               |
-| `totp_interval`     | 30           | Time interval (seconds) for TOTP codes                                      |
-| `session_expiry`    | 3600         | Session duration after successful 2FA verification (seconds)               |
+| `secret`            | Auto-generated| Base32 secret for TOTP generation                                          |
+| `qr_fill_color`     | "black"      | QR code foreground color                                                    |
+| `qr_back_color`     | "white"      | QR code background color                                                    |
+| `issuer_name`       | "2FastAuth"  | Name displayed in authenticator apps                                        |
+
+### TwoFactorMiddleware Parameters
+
+| Parameter           | Default              | Description                                                                 |
+|---------------------|----------------------|-----------------------------------------------------------------------------|
+| `excluded_paths`    | ["/login", "/setup-2fa"] | Paths that bypass 2FA verification                                  |
+| `header_name`       | "X-2FA-Code"         | Request header containing 2FA verification code                             |
 
 ## Advanced Configuration
 
 ```python
-from two_fast_auth import TwoFactorMiddleware, TwoFactorConfig
+# Custom QR code generation
+auth = TwoFactorAuth(
+    qr_fill_color="#1a73e8",
+    qr_back_color="#f8f9fa",
+    issuer_name="Secure Corp"
+)
 
-config = TwoFactorConfig(
-    issuer_name="Secure App",
+# Middleware with custom settings
+app.add_middleware(
+    TwoFactorMiddleware,
+    get_user_secret_callback=get_user_secret,
     excluded_paths=["/public", "/healthcheck"],
-    qr_code_size=300,
-    recovery_codes_count=12,
-    totp_interval=60,
-    session_expiry=7200,
-    custom_template="custom_2fa.html",
-    failed_attempts_limit=5
+    header_name="X-MFA-Token"
+)
+
+# Generate recovery codes (10 chars length, 8 codes)
+recovery_codes = TwoFactorAuth.generate_recovery_codes(
+    count=8,
+    code_length=10
 )
 ```
 
