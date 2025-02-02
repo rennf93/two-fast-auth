@@ -52,3 +52,21 @@ def test_generate_recovery_codes():
     )
     assert len(custom_codes) == 3
     assert all(len(code) == 11 for code in custom_codes)
+
+
+def test_generate_qr_code_without_email(two_factor_auth):
+    """Test QR code generation validation"""
+    with pytest.raises(ValueError) as exc:
+        two_factor_auth.generate_qr_code(None)
+    assert "User email is required" in str(exc.value)
+
+    with pytest.raises(ValueError):
+        two_factor_auth.generate_qr_code("")
+
+
+def test_verify_code_edge_cases(two_factor_auth):
+    """Test non-6-digit code verification"""
+    assert two_factor_auth.verify_code(None) is False
+    assert two_factor_auth.verify_code("") is False
+    assert two_factor_auth.verify_code("12345") is False  # 5 digits
+    assert two_factor_auth.verify_code("1234567") is False  # 7 digits

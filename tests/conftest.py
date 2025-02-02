@@ -56,9 +56,9 @@ def test_client(test_app):
 def mock_user():
     class MockUser:
         def __init__(self):
-            self.id = "user123"
+            self.id = "user_with_2fa"
             self.email = "user@example.com"
-            self.two_fa_secret = None
+            self.two_fa_secret = "SECRETEXAMPLE"
             self.is_authenticated = True
 
     return MockUser()
