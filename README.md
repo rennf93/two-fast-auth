@@ -116,7 +116,7 @@ MIT License - See [LICENSE](https://github.com/rennf93/two-fast-auth/blob/main/L
 
 ## Acknowledgements
 
+- [Cryptography](https://cryptography.io/)
 - [FastAPI](https://fastapi.tiangolo.com/)
-- [FastAPI Users](https://fastapi-users.github.io/fastapi-users/)
 - [PyOTP](https://pyauth.github.io/pyotp/)
 - [qrcode](https://github.com/lincolnloop/python-qrcode)
