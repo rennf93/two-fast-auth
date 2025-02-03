@@ -47,10 +47,13 @@ nav:
     - Core Module Guide: tutorial/two-factor-auth.md
     - Middleware Guide: tutorial/two-factor-middleware.md
     - Example Implementation: tutorial/example_implementation.md
+    - Encryption Example Implementation: tutorial/example_implementation_encryption.md
     - Example Application: tutorial/example_app.md
+    - Encryption Example Application: tutorial/example_app_encryption.md
   - API Reference:
     - Core Module: core/core.md
     - Middleware: middleware/middleware.md
+    - Encryption: crypto/encryption.md
   - Release Notes: release-notes.md
 
 markdown_extensions:

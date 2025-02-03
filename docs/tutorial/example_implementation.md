@@ -6,7 +6,7 @@ keywords: two-fast-auth example implementation, fastapi 2fa middleware, fastapi 
 
 # Complete Example Implementation
 
-## Full Application Setup
+## Full Configuration
 ```python
 from fastapi import FastAPI, Depends, HTTPException
 from two_fast_auth import TwoFactorMiddleware, TwoFactorAuth
@@ -22,8 +22,10 @@ app.add_middleware(
     get_user_secret_callback=get_user_secret,
     excluded_paths=["/setup-2fa", "/verify-2fa"]
 )
+```
 
-# Auth endpoints
+## Auth endpoints
+```python
 @app.post("/setup-2fa")
 async def setup_2fa_endpoint(
     user: User = Depends(current_active_user)
@@ -45,8 +47,10 @@ async def verify_2fa_endpoint(
             detail="Invalid 2FA code"
         )
     return {"status": "verified"}
+```
 
-# Protected endpoint
+## Protected endpoint
+```python
 @app.get("/protected-data")
 async def protected_data(
     user: User = Depends(current_active_user)
@@ -63,4 +67,5 @@ async def protected_data(
 6. Access protected routes with valid code
 
 ## Notes
- - Please, refer to the [Example FastAPI Application](../tutorial/example_app.md) for a more complete example implementation.
+- See [Example Application](../tutorial/example_app.md) for complete implementation
+- For encrypted secrets, use [Encryption Implementation](../tutorial/example_implementation_encryption.md)

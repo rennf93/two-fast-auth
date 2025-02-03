@@ -33,6 +33,20 @@ app.add_middleware(
 )
 ```
 
+## Encryption Configuration
+```python
+app.add_middleware(
+    TwoFactorMiddleware,
+    get_user_secret_callback=get_user_secret,
+    encryption_key="your-32-url-safe-base64-key",  # Required for encrypted secrets
+    excluded_paths=[
+        "/docs",
+        "/setup-2fa"
+    ],
+    header_name="X-2FA-Code"
+)
+```
+
 ## Handling Exceptions
 ```python
 @app.exception_handler(HTTPException)
@@ -64,3 +78,27 @@ def test_2fa_protected_route():
     response = client.get("/protected")
     assert response.status_code == 401
 ```
+
+## Encryption Validation
+```python
+# Test valid encrypted flow
+def test_encrypted_flow():
+    valid_code = get_current_totp_code(secret)
+    response = client.get(
+        "/protected",
+        headers={"X-2FA-Code": valid_code}
+    )
+    assert response.status_code == 200
+
+# Test invalid encryption key
+def test_bad_encryption():
+    with pytest.raises(ValueError) as exc:
+        TwoFactorAuth.decrypt_secret(
+            encrypted_secret,
+            encryption_key="wrong-key"
+        )
+    assert "Decryption failed" in str(exc.value)
+```
+
+## Notes
+- For full encrypted middleware examples, refer to [Encryption Implementation](../tutorial/example_implementation_encryption.md)
