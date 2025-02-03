@@ -28,28 +28,44 @@ async def setup_2fa(
     return StreamingResponse(qr_code, media_type="image/png")
 ```
 
-## Code Verification
+## Encrypted Secret Setup
+```python
+@app.post("/setup-2fa")
+async def setup_2fa(user: User = Depends(current_active_user)):
+    tfa = TwoFactorAuth()
+    encrypted_secret = TwoFactorAuth.encrypt_secret(
+        tfa.secret,
+        encryption_key="your-encryption-key"  # Match middleware key
+    )
+
+    user.two_fa_secret = encrypted_secret
+    await user.save()
+
+    return {
+        "qr_code": tfa.generate_qr_code(user.email),
+        "secret": "Store this encrypted value: " + encrypted_secret
+    }
+```
+
+## Encryption Verification
 ```python
 @app.post("/verify-2fa")
 async def verify_2fa(
     code: str = Form(...),
     user: User = Depends(current_active_user)
 ):
-    if not user.two_fa_secret:
-        raise HTTPException(
-            status_code=400,
-            detail="2FA not configured"
+    try:
+        secret = TwoFactorAuth.decrypt_secret(
+            user.two_fa_secret,
+            encryption_key="your-encryption-key"
         )
+    except ValueError as e:
+        raise HTTPException(400, detail=str(e))
 
-    tfa = TwoFactorAuth(user.two_fa_secret)
-    if tfa.verify_code(code):
-        return {
-            "status": "2FA verified"
-        }
-    raise HTTPException(
-        status_code=401,
-        detail="Invalid code"
-    )
+    if not TwoFactorAuth(secret).verify_code(code):
+        raise HTTPException(401, "Invalid code")
+
+    return {"status": "verified"}
 ```
 
 ## Recovery Code Management
@@ -66,3 +82,6 @@ async def generate_recovery_codes(
     await user.save()
     return {"recovery_codes": codes}
 ```
+
+## Notes
+- For complete encrypted examples, see [Encryption Implementation](../tutorial/example_implementation_encryption.md)

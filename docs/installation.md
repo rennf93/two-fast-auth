@@ -8,6 +8,7 @@ keywords: two-fast-auth installation, fastapi 2fa middleware, fastapi 2fa setup
 
 ## Requirements
 - Python 3.10+
+- cryptography (required for secret encryption)
 - FastAPI
 - pyotp
 - qrcode
@@ -28,9 +29,18 @@ print(two_fast_auth.__version__)
 ```python
 from two_fast_auth import TwoFactorMiddleware
 
+# Without encryption
 app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=lambda uid: "user_secret",
+    header_name="X-2FA-Token"
+)
+
+# With encryption
+app.add_middleware(
+    TwoFactorMiddleware,
+    get_user_secret_callback=lambda uid: "encrypted_secret",
+    encryption_key="your-fernent-key-here",
     header_name="X-2FA-Token"
 )
 ```
@@ -43,17 +53,21 @@ pip install -e .
 ```
 
 ## Dependency Matrix
-| Component | Required | Version |
-|-----------|----------|---------|
-| Python | Yes | 3.10+ |
-| FastAPI | Yes | 0.115.8+ |
-| FastAPI Users | Optional | 14.0.1+ |
-| Pillow | Yes | 11.1.0+ |
-| PyOTP | Yes | 2.9.0+ |
-| QRCode | Yes | 8.0+ |
-| SQLAlchemy | Optional | 2.0.37+ |
+| Component | Required | Version | Purpose |
+|-----------|----------|---------|---------|
+| cryptography | Yes * | 44.0.0+ | Secret encryption |
+| Python | Yes | 3.10+ | Runtime |
+| FastAPI | Yes | 0.115.8+ | Runtime |
+| FastAPI Users | Optional | 14.0.1+ | Runtime |
+| Pillow | Yes | 11.1.0+ | Runtime |
+| PyOTP | Yes | 2.9.0+ | Runtime |
+| QRCode | Yes | 8.0+ | Runtime |
+| SQLAlchemy | Optional | 2.0.37+ | Runtime |
+| * Required for encryption features |
 
 # What's Next?
 - [First Steps](tutorial/first-steps.md)
-- [Learn how to implement 2FA in your FastAPI application](tutorial/example_implementation.md)
-- [See an example application](tutorial/example_app.md)
+- [Standard Implementation](tutorial/example_implementation.md)
+- [Encryption Implementation](tutorial/example_implementation_encryption.md)
+- [Example Application](tutorial/example_app.md)
+- [Encryption Example Application](tutorial/example_app_encryption.md)

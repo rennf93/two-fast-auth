@@ -2,7 +2,7 @@
 
 ---
 
-[![PyPI version](https://badge.fury.io/py/two-fast-auth.svg?cache=none)](https://badge.fury.io/py/two-fast-auth)
+[![PyPI version](https://badge.fury.io/py/two-fast-auth.svg?cache=none&icon=si%3Apython&icon_color=%23008cb4)](https://badge.fury.io/py/two-fast-auth)
 [![Release](https://github.com/rennf93/two-fast-auth/actions/workflows/release.yml/badge.svg)](https://github.com/rennf93/two-fast-auth/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/rennf93/two-fast-auth/actions/workflows/ci.yml/badge.svg)](https://github.com/rennf93/two-fast-auth/actions/workflows/ci.yml)
@@ -23,6 +23,7 @@
 - **QR Code Generation**: Automatic QR code creation for authenticator apps
 - **TOTP Verification**: Time-based one-time password validation
 - **Recovery Codes**: Secure recovery code generation and management
+- **Optional Secret Encryption**: Securely store and verify 2FA secrets
 - **Middleware Integration**: Easy integration with FastAPI routes
 
 ## Installation
@@ -48,7 +49,8 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
     excluded_paths=["/docs", "/redoc"],
-    header_name="X-2FA-Code"
+    header_name="X-2FA-Code",
+    encryption_key="your-key-here"  # Optional
 )
 
 @app.get("/protected-route")
@@ -71,31 +73,30 @@ async def protected_route():
 
 | Parameter           | Default              | Description                                                                 |
 |---------------------|----------------------|-----------------------------------------------------------------------------|
+| `encryption_key`    | None                 | Encryption key for securing 2FA secrets (Fernet-compatible key)            |
 | `excluded_paths`    | ["/login", "/setup-2fa"] | Paths that bypass 2FA verification                                  |
 | `header_name`       | "X-2FA-Code"         | Request header containing 2FA verification code                             |
 
 ## Advanced Configuration
 
 ```python
-# Custom QR code generation
-auth = TwoFactorAuth(
-    qr_fill_color="#1a73e8",
-    qr_back_color="#f8f9fa",
-    issuer_name="Secure Corp"
+# Generate and encrypt secret
+secret = TwoFactorAuth().secret
+encrypted_secret = TwoFactorAuth.encrypt_secret(
+    secret,
+    encryption_key="your-key-here"
 )
 
-# Middleware with custom settings
+# Store encrypted secret in database
+async def get_user_secret(user_id: str) -> str:
+    return await fetch_encrypted_secret_from_db(user_id)
+
+# Middleware with encrypted secrets
 app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
-    excluded_paths=["/public", "/healthcheck"],
-    header_name="X-MFA-Token"
-)
-
-# Generate recovery codes (10 chars length, 8 codes)
-recovery_codes = TwoFactorAuth.generate_recovery_codes(
-    count=8,
-    code_length=10
+    encryption_key="your-key-here",
+    excluded_paths=["/healthcheck"]
 )
 ```
 
@@ -115,7 +116,7 @@ MIT License - See [LICENSE](https://github.com/rennf93/two-fast-auth/blob/main/L
 
 ## Acknowledgements
 
+- [Cryptography](https://cryptography.io/)
 - [FastAPI](https://fastapi.tiangolo.com/)
-- [FastAPI Users](https://fastapi-users.github.io/fastapi-users/)
 - [PyOTP](https://pyauth.github.io/pyotp/)
 - [qrcode](https://github.com/lincolnloop/python-qrcode)

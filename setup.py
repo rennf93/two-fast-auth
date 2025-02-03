@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="two-fast-auth",
-    version="1.0.5",
+    version="1.1.0",
     packages=find_packages(
         include=[
             "two_fast_auth",
@@ -20,7 +20,7 @@ setup(
         "fastapi",
         "pyotp",
         "qrcode",
-        "pillow",
+        "pillow"
     ],
     extras_require={
         "dev": [
