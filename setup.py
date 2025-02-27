@@ -8,7 +8,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(
-    name="two-fast-auth",
+    name="two_fast_auth",
     version="1.1.0",
     packages=find_packages(
         include=[
