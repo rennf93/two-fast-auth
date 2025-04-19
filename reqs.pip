@@ -1,5 +1,5 @@
-cryptography==44.0.0
-fastapi==0.115.8
-pillow==11.1.0
-pyotp==2.9.0
-qrcode==8.0
+cryptography
+fastapi
+pillow
+pyotp
+qrcode

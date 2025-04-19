@@ -178,3 +178,7 @@ manual_testing/
 
 # Custom
 .DS_Store
+.venv_3.10
+.venv_3.11
+.venv_3.12
+.venv_3.13
