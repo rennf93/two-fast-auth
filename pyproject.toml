@@ -1,0 +1,252 @@
+[project]
+name = "two_fast_auth"
+version = "1.1.1"
+description = "FastAPI 2-Factor Authentication Middleware"
+authors = [
+    {name = "Renzo Franceschini", email = "rennf93@users.noreply.github.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10,<3.15"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "fastapi",
+    "pyotp",
+    "qrcode",
+    "pillow"
+]
+
+[project.urls]
+Homepage = "https://github.com/rennf93/two-fast-auth"
+
+[project.optional-dependencies]
+dev = [
+    "bandit[toml]",
+    "deptry",
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-material",
+    "mypy",
+    "pip-audit",
+    "pre-commit",
+    "pymarkdownlnt",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-mock",
+    "radon",
+    "ruff",
+    "safety",
+    # "semgrep",
+    "vulture",
+    "xenon",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["two_fast_auth"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".env",
+    ".envrc",
+    ".venv/",
+    ".venv_*/",
+    ".github/",
+    "CLAUDE.md",
+    ".pre-commit-config.yaml",
+    "Makefile",
+    "mkdocs.yml",
+    "vulture_whitelist.py",
+    "tests/",
+    "docs/",
+    "examples/",
+    "manual_testing/",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.ruff]
+target-version = "py310"
+exclude = ["vulture_whitelist.py", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # isort
+    "I",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=two_fast_auth --cov-report=term-missing"
+markers = [
+    "asyncio: mark tests as async"
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+strict_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+exclude = ["vulture_whitelist.py", ".venv"]
+
+[[tool.mypy.overrides]]
+module = "qrcode.*"
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+module = "pillow.*"
+follow_imports = "skip"
+
+[tool.pymarkdown.plugins.md007]
+# MD007 - Unordered list indentation (set to 2 spaces)
+enabled = true
+indent = 2
+
+[tool.pymarkdown.plugins.md012]
+# MD012 - Multiple consecutive blank lines (allow up to 2)
+enabled = true
+maximum = 2
+
+[tool.pymarkdown.plugins.md013]
+# MD013 - Line length (disabled)
+enabled = false
+
+[tool.pymarkdown.plugins.md024]
+# MD024 - Multiple headings with same content (allow siblings only)
+enabled = true
+siblings_only = true
+
+[tool.pymarkdown.plugins.md033]
+# MD033 - Inline HTML
+enabled = false
+
+[tool.pymarkdown.plugins.md035]
+# MD035 - Horizontal rule style (disabled - allow any style)
+enabled = false
+
+[tool.pymarkdown.plugins.md041]
+# MD041 - First line in file should be top-level heading (disabled)
+enabled = false
+
+[tool.pymarkdown.plugins.md046]
+# MD046 - Code block style (disabled - allow any style)
+enabled = false
+
+[tool.pymarkdown.plugins.md029]
+# MD029 - Ordered list item prefix (disabled - allow any style)
+enabled = false
+
+[tool.vulture]
+paths = ["two_fast_auth", "tests", "vulture_whitelist.py"]
+exclude = ["**/conftest.py", ".venv"]
+min_confidence = 100
+ignore_decorators = [
+    "@app.route",
+    "@app.get",
+    "@app.post",
+    "@app.put",
+    "@app.delete",
+    "@app.patch",
+    "@pytest.fixture",
+    "@pytest.mark.*",
+    "@validator",
+    "@root_validator",
+    "@field_validator",
+    "@model_validator",
+]
+ignore_names = [
+    "test_*",
+    "Test*",
+    "cleanup_*",
+    "mock_*",
+    "expected_*",
+    "exc_*",
+    "__*__",
+    "Config",
+    "Field",
+]
+sort_by_size = true
+
+[tool.bandit]
+skips = ["B101", "B601"]
+exclude_dirs = ["tests", ".venv", "vulture_whitelist.py"]
+severity = "medium"
+
+[tool.radon]
+exclude = "tests/*,.venv/*,vulture_whitelist.py"
+cc_min = "C"
+mi_min = "A"
+no_assert = false
+show_closures = true
+total_average = true
+
+[tool.xenon]
+max_absolute = "B"
+max_modules = "A"
+max_average = "A"
+exclude = ["tests/*", ".venv/*", "vulture_whitelist.py"]
+ignore = []
+
+[tool.deptry]
+exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs"]
+extend_exclude = ["conftest.py", "setup.py"]
+known_first_party = ["two_fast_auth"]
+per_rule_ignores = { "DEP002" = [
+    "bandit",
+    "deptry",
+    "mkdocs",
+    "mkdocstrings",
+    "mkdocstrings-python",
+    "mkdocs-material",
+    "mypy",
+    "pip-audit",
+    "pre-commit",
+    "pymarkdownlnt",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-mock",
+    "radon",
+    "ruff",
+    "safety",
+    "vulture",
+    "xenon",
+] }

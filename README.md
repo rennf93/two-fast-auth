@@ -112,7 +112,7 @@ MIT License - See [LICENSE](https://github.com/rennf93/two-fast-auth/blob/main/L
 
 **Renzo Franceschini**
 - [GitHub Profile](https://github.com/rennf93)
-- [Email](mailto:rennf93@gmail.com)
+- [Email](mailto:rennf93@users.noreply.github.comgmail.com)
 
 ## Acknowledgements
 
