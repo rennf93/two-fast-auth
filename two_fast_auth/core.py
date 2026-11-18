@@ -1,15 +1,15 @@
-from cryptography.fernet import Fernet, InvalidToken
-from io import BytesIO
 import secrets
+from io import BytesIO
+
 import pyotp
 import qrcode
-from typing import Optional, Union
+from cryptography.fernet import Fernet, InvalidToken
 
 
 class TwoFactorAuth:
     def __init__(
         self,
-        secret: str = None,
+        secret: str | None = None,
         *,
         qr_fill_color: str = "black",
         qr_back_color: str = "white",
@@ -57,7 +57,8 @@ class TwoFactorAuth:
 
     @staticmethod
     def encrypt_secret(
-        secret: str, encryption_key: Optional[Union[str, bytes]] = None
+        secret: str,
+        encryption_key: str | bytes | None = None,
     ) -> str:
         """Encrypt 2FA secret (optional)"""
         if not secret:
@@ -81,7 +82,8 @@ class TwoFactorAuth:
 
     @staticmethod
     def decrypt_secret(
-        encrypted_secret: str, encryption_key: Optional[Union[str, bytes]] = None
+        encrypted_secret: str,
+        encryption_key: str | bytes | None = None,
     ) -> str:
         """Decrypt 2FA secret (optional)"""
         if not encrypted_secret:
