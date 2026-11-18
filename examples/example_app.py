@@ -3,6 +3,8 @@ Example FastAPI app with 2FA middleware
 """
 
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 # You'll have to create and import
@@ -12,7 +14,12 @@ from typing import Annotated
 # FastAPI Users and SQLAlchemy if you
 # don't need a fully customized user
 # management system.
-from database import User, async_session_maker, get_user_row
+from database import (
+    User,
+    async_session_maker,
+    create_db_and_tables,
+    get_user_row,
+)
 
 # Import FastAPI and Two-Fast-Auth
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, status
@@ -27,8 +34,15 @@ from users import (
 
 from two_fast_auth import TwoFactorAuth, TwoFactorMiddleware
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    await create_db_and_tables()
+    yield
+
+
 # Create FastAPI instance
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 # Get user secret callback for middleware

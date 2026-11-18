@@ -3,6 +3,8 @@ Example FastAPI app with 2FA middleware
 """
 
 import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from cryptography.fernet import Fernet
@@ -14,7 +16,12 @@ from cryptography.fernet import Fernet
 # FastAPI Users and SQLAlchemy if you
 # don't need a fully customized user
 # management system.
-from database import User, async_session_maker, get_user_row
+from database import (
+    User,
+    async_session_maker,
+    create_db_and_tables,
+    get_user_row,
+)
 
 # Import FastAPI and Two-Fast-Auth
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, status
@@ -32,8 +39,15 @@ from two_fast_auth import TwoFactorAuth, TwoFactorMiddleware
 # Generate or use a persistent encryption key
 ENCRYPTION_KEY = Fernet.generate_key()
 
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    await create_db_and_tables()
+    yield
+
+
 # Create FastAPI instance
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 # Get user secret callback for middleware
@@ -163,12 +177,13 @@ async def protected_route(
     x_2fa_code: Annotated[str, Header(alias="X-2FA-Code")],
 ) -> dict[str, str]:
     # Explicit 2FA verification for demonstration
-    if not user.two_fa_secret:
+    if not user.encrypted_secret:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="2FA not configured"
         )
 
-    if not TwoFactorAuth(user.two_fa_secret).verify_code(x_2fa_code):
+    secret = TwoFactorAuth.decrypt_secret(user.encrypted_secret, ENCRYPTION_KEY)
+    if not TwoFactorAuth(secret).verify_code(x_2fa_code):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid 2FA code"
         )
