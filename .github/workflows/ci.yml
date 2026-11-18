@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - master
-  pull_request_target:
+  # pull_request, not pull_request_target: the tests run on the PR's own code
+  pull_request:
     branches:
       - master
 
@@ -13,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      pull-requests: write
+      contents: read
 
     strategy:
       matrix:
@@ -24,6 +25,8 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Send Initial Slack Message
+        # the Slack secrets and head_commit exist on a push to master only
+        if: github.event_name == 'push'
         id: send_initial_slack_ci
         uses: rennf93/good-comms@master
         with:
@@ -78,6 +81,7 @@ jobs:
           black .
 
       - name: Notify Success on Slack Channel
+        if: github.event_name == 'push'
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
@@ -107,7 +111,7 @@ jobs:
           SLACK_THREAD_TS: ${{ steps.send_initial_slack_ci.outputs.SLACK_THREAD_TS }}
 
       - name: Send Failure Notification to Slack
-        if: failure()
+        if: failure() && github.event_name == 'push'
         uses: rennf93/good-comms@master
         with:
           SLACK_WEBHOOK: '${{ secrets.SLACK_WEBHOOK }}'
