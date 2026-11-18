@@ -41,17 +41,20 @@ from two_fast_auth import TwoFactorMiddleware, TwoFactorAuth
 
 app = FastAPI()
 
+
 async def get_user_secret(user_id: str) -> str:
     # Implement your logic to retrieve user's secret from database
     return "user_stored_secret"  # Replace with actual DB lookup
+
 
 app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
     excluded_paths=["/docs", "/redoc"],
     header_name="X-2FA-Code",
-    encryption_key="your-key-here"  # Optional
+    encryption_key="your-key-here",  # Optional
 )
+
 
 @app.get("/protected-route")
 async def protected_route():
@@ -82,21 +85,20 @@ async def protected_route():
 ```python
 # Generate and encrypt secret
 secret = TwoFactorAuth().secret
-encrypted_secret = TwoFactorAuth.encrypt_secret(
-    secret,
-    encryption_key="your-key-here"
-)
+encrypted_secret = TwoFactorAuth.encrypt_secret(secret, encryption_key="your-key-here")
+
 
 # Store encrypted secret in database
 async def get_user_secret(user_id: str) -> str:
     return await fetch_encrypted_secret_from_db(user_id)
+
 
 # Middleware with encrypted secrets
 app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
     encryption_key="your-key-here",
-    excluded_paths=["/healthcheck"]
+    excluded_paths=["/healthcheck"],
 )
 ```
 

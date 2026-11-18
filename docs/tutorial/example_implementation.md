@@ -20,41 +20,34 @@ app = FastAPI()
 app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
-    excluded_paths=["/setup-2fa", "/verify-2fa"]
+    excluded_paths=["/setup-2fa", "/verify-2fa"],
 )
 ```
 
 ## Auth endpoints
 ```python
 @app.post("/setup-2fa")
-async def setup_2fa_endpoint(
-    user: User = Depends(current_active_user)
-):
+async def setup_2fa_endpoint(user: User = Depends(current_active_user)):
     tfa = TwoFactorAuth()
     qr_code = tfa.generate_qr_code(user.email)
     user.two_fa_secret = tfa.secret
     await user.save()
     return StreamingResponse(qr_code, media_type="image/png")
 
+
 @app.post("/verify-2fa")
 async def verify_2fa_endpoint(
-    code: str = Form(...),
-    user: User = Depends(current_active_user)
+    code: str = Form(...), user: User = Depends(current_active_user)
 ):
     if not TwoFactorAuth(user.two_fa_secret).verify_code(code):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid 2FA code"
-        )
+        raise HTTPException(status_code=401, detail="Invalid 2FA code")
     return {"status": "verified"}
 ```
 
 ## Protected endpoint
 ```python
 @app.get("/protected-data")
-async def protected_data(
-    user: User = Depends(current_active_user)
-):
+async def protected_data(user: User = Depends(current_active_user)):
     return {"data": "Sensitive information"}
 ```
 

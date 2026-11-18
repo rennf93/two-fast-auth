@@ -1,8 +1,6 @@
 import pathlib
-from setuptools import (
-    setup,
-    find_packages
-)
+
+from setuptools import find_packages, setup
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
@@ -10,18 +8,8 @@ README = (HERE / "README.md").read_text()
 setup(
     name="two_fast_auth",
     version="1.1.0",
-    packages=find_packages(
-        include=[
-            "two_fast_auth",
-            "two_fast_auth.*"
-        ]
-    ),
-    install_requires=[
-        "fastapi",
-        "pyotp",
-        "qrcode",
-        "pillow"
-    ],
+    packages=find_packages(include=["two_fast_auth", "two_fast_auth.*"]),
+    install_requires=["fastapi", "pyotp", "qrcode", "pillow"],
     extras_require={
         "dev": [
             "black",
@@ -32,7 +20,7 @@ setup(
             "pytest-asyncio",
             "pytest-cov",
             "pytest-mock",
-            "sqlalchemy"
+            "sqlalchemy",
         ]
     },
     python_requires=">=3.10",
@@ -61,11 +49,5 @@ setup(
         "two_fast_auth": ["py.typed"],
     },
     license="MIT",
-    keywords=[
-        "fastapi",
-        "security",
-        "2fa",
-        "authentication",
-        "middleware"
-    ],
+    keywords=["fastapi", "security", "2fa", "authentication", "middleware"],
 )

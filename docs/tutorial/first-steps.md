@@ -20,7 +20,7 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
     encryption_key="your-fernent-key-here",
-    excluded_paths=["/setup-2fa"]
+    excluded_paths=["/setup-2fa"],
 )
 
 # Without encryption
@@ -30,7 +30,7 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
     encryption_key="your-fernent-key-here",
-    excluded_paths=["/setup-2fa"]
+    excluded_paths=["/setup-2fa"],
 )
 ```
 
@@ -38,16 +38,17 @@ app.add_middleware(
 ```python
 from two_fast_auth import TwoFactorAuth
 
+
 @app.post("/setup-2fa")
 async def setup_2fa(user: User = Depends(current_user)):
     tfa = TwoFactorAuth()
     encrypted_secret = TwoFactorAuth.encrypt_secret(
         tfa.secret,
-        encryption_key="your-key-here"  # From middleware config
+        encryption_key="your-key-here",  # From middleware config
     )
     return {
         "qr_code": tfa.generate_qr_code(user.email),
-        "secret": encrypted_secret  # Store this in DB
+        "secret": encrypted_secret,  # Store this in DB
     }
 ```
 
@@ -64,16 +65,10 @@ async def verify_2fa(code: str, user: User = Depends(current_user)):
 5. **Manual Secret Handling (Optional)**
 ```python
 # Encrypt existing secret
-encrypted = TwoFactorAuth.encrypt_secret(
-    "BASE32SECRET",
-    encryption_key="your-key"
-)
+encrypted = TwoFactorAuth.encrypt_secret("BASE32SECRET", encryption_key="your-key")
 
 # Decrypt secret
-original = TwoFactorAuth.decrypt_secret(
-    encrypted,
-    encryption_key="your-key"
-)
+original = TwoFactorAuth.decrypt_secret(encrypted, encryption_key="your-key")
 ```
 
 ## Next Steps
