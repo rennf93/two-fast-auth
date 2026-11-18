@@ -22,6 +22,7 @@ pip install two-fast-auth
 ## Verify Installation
 ```python
 import two_fast_auth
+
 print(two_fast_auth.__version__)
 ```
 
@@ -33,7 +34,7 @@ from two_fast_auth import TwoFactorMiddleware
 app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=lambda uid: "user_secret",
-    header_name="X-2FA-Token"
+    header_name="X-2FA-Token",
 )
 
 # With encryption
@@ -41,7 +42,7 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=lambda uid: "encrypted_secret",
     encryption_key="your-fernent-key-here",
-    header_name="X-2FA-Token"
+    header_name="X-2FA-Token",
 )
 ```
 

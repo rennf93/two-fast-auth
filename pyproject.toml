@@ -33,8 +33,10 @@ Homepage = "https://github.com/rennf93/two-fast-auth"
 
 [project.optional-dependencies]
 dev = [
+    "aiosqlite",
     "bandit[toml]",
     "deptry",
+    "fastapi-users[sqlalchemy]",
     "mkdocs",
     "mkdocstrings",
     "mkdocstrings-python",
@@ -51,6 +53,10 @@ dev = [
     "ruff",
     "safety",
     # "semgrep",
+    "sqlalchemy[asyncio]",
+    "types-qrcode",
+    "types-setuptools",
+    "uvicorn",
     "vulture",
     "xenon",
 ]
@@ -230,8 +236,10 @@ exclude = ["tests", ".venv", "vulture_whitelist.py", "examples", "docs"]
 extend_exclude = ["conftest.py", "setup.py"]
 known_first_party = ["two_fast_auth"]
 per_rule_ignores = { "DEP002" = [
+    "aiosqlite",
     "bandit",
     "deptry",
+    "fastapi-users",
     "mkdocs",
     "mkdocstrings",
     "mkdocstrings-python",
@@ -247,6 +255,10 @@ per_rule_ignores = { "DEP002" = [
     "radon",
     "ruff",
     "safety",
+    "sqlalchemy",
+    "types-qrcode",
+    "types-setuptools",
+    "uvicorn",
     "vulture",
     "xenon",
 ] }

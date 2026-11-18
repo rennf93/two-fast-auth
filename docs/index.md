@@ -37,7 +37,7 @@ app = FastAPI()
 app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=lambda uid: "secret",  # Plaintext secret
-    excluded_paths=["/docs"]
+    excluded_paths=["/docs"],
 )
 
 # With encryption:
@@ -45,7 +45,7 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=lambda uid: "encrypted_secret",
     encryption_key="your-32-url-safe-base64-key",
-    excluded_paths=["/docs"]
+    excluded_paths=["/docs"],
 )
 ```
 

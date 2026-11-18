@@ -21,14 +21,12 @@ from two_fast_auth import TwoFactorAuth
 
 # Encrypt the 2FA secret
 encrypted_secret = TwoFactorAuth.encrypt_secret(
-    "plaintext_secret",
-    encryption_key="your-encryption-key"
+    "plaintext_secret", encryption_key="your-encryption-key"
 )
 
 # Decrypt the 2FA secret
 decrypted_secret = TwoFactorAuth.decrypt_secret(
-    encrypted_secret,
-    encryption_key="your-encryption-key"
+    encrypted_secret, encryption_key="your-encryption-key"
 )
 ```
 
@@ -38,7 +36,7 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret,
     encryption_key="your-encryption-key",
-    excluded_paths=["/docs"]
+    excluded_paths=["/docs"],
 )
 ```
 
@@ -55,8 +53,7 @@ async def migrate_secrets():
     for user in get_all_users():
         if not user.encrypted_secret:
             encrypted = TwoFactorAuth.encrypt_secret(
-                user.plain_secret,
-                encryption_key=KEY
+                user.plain_secret, encryption_key=KEY
             )
             user.encrypted_secret = encrypted
             await user.save()

@@ -2,6 +2,11 @@
 Example FastAPI app with 2FA middleware
 """
 
+import uuid
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Annotated
+
 # You'll have to create and import
 # your own user models, functions, db
 # and other dependencies.
@@ -9,45 +14,41 @@ Example FastAPI app with 2FA middleware
 # FastAPI Users and SQLAlchemy if you
 # don't need a fully customized user
 # management system.
-from database import async_session_maker
-from users import (
+from database import (
     User,
-    UserRead,
-    UserCreate,
-    fastapi_users,
-    auth_backend,
-    current_active_user
+    async_session_maker,
+    create_db_and_tables,
+    get_user_row,
 )
 
 # Import FastAPI and Two-Fast-Auth
-from fastapi import (
-    FastAPI,
-    Body,
-    Depends,
-    Header,
-    HTTPException,
-    status
-)
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, status
 from fastapi.responses import StreamingResponse
-from two_fast_auth import (
-    TwoFactorMiddleware,
-    TwoFactorAuth
+from users import (
+    UserCreate,
+    UserRead,
+    auth_backend,
+    current_active_user,
+    fastapi_users,
 )
+
+from two_fast_auth import TwoFactorAuth, TwoFactorMiddleware
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    await create_db_and_tables()
+    yield
 
 
 # Create FastAPI instance
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 
 # Get user secret callback for middleware
-async def get_user_secret_callback(
-    user_id: str
-) -> str:
+async def get_user_secret_callback(user_id: str) -> str | None:
     async with async_session_maker() as session:
-        user = await session.get(
-            User,
-            user_id
-        )
+        user = await session.get(User, uuid.UUID(user_id))
         return user.two_fa_secret if user else None
 
 
@@ -56,24 +57,22 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_user_secret_callback,
     excluded_paths=[
-        "/docs", # Swagger UI
-        "/openapi.json", # OpenAPI JSON
-        "/redoc", # Redoc UI
-        "/auth/jwt/login", # FastAPI Users login
-        "/auth/register", # FastAPI Users register
-        "/setup-2fa", # Example endpoint
-        "/verify-2fa", # Example endpoint
-        "/recovery-codes" # Example endpoint
-    ]
+        "/docs",  # Swagger UI
+        "/openapi.json",  # OpenAPI JSON
+        "/redoc",  # Redoc UI
+        "/auth/jwt/login",  # FastAPI Users login
+        "/auth/register",  # FastAPI Users register
+        "/setup-2fa",  # Example endpoint
+        "/verify-2fa",  # Example endpoint
+        "/recovery-codes",  # Example endpoint
+    ],
 )
 
 
 # FastAPI Users Routers
 ## Auth Router
 app.include_router(
-    fastapi_users.get_auth_router(
-        auth_backend
-    ),
+    fastapi_users.get_auth_router(auth_backend),
     prefix="/auth/jwt",
     tags=["Auth"],
 )
@@ -81,10 +80,7 @@ app.include_router(
 
 ## Register Router
 app.include_router(
-    fastapi_users.get_register_router(
-        UserRead,
-        UserCreate
-    ),
+    fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["Auth"],
 )
@@ -92,32 +88,24 @@ app.include_router(
 
 # Endpoints examples
 ## Setup 2FA
-@app.post(
-    "/setup-2fa",
-    tags=["Auth"]
-)
+@app.post("/setup-2fa", tags=["Auth"])
 async def setup_2fa(
-    user: User = Depends(current_active_user)
-):
+    user: Annotated[User, Depends(current_active_user)],
+) -> StreamingResponse:
     # Generate new 2FA secret
     two_fa = TwoFactorAuth()
 
     # Generate QR code
-    qr_code = two_fa.generate_qr_code(
-        user.email or user.username
-    )
+    qr_code = two_fa.generate_qr_code(user.email)
 
     # Generate recovery codes
     recovery_codes = TwoFactorAuth.generate_recovery_codes()
 
     # Store secret and recovery codes in DB
     async with async_session_maker() as session:
-        db_user = await session.get(
-            User,
-            user.id
-        )
+        db_user = await get_user_row(session, user.id)
         db_user.two_fa_secret = two_fa.secret
-        db_user.recovery_codes = recovery_codes
+        db_user.recovery_codes = list(recovery_codes)
         session.add(db_user)
         await session.commit()
         await session.refresh(db_user)
@@ -128,27 +116,20 @@ async def setup_2fa(
         media_type="image/png",
         headers={
             "X-2FA-Secret": two_fa.secret,
-            "X-Recovery-Codes": ",".join(recovery_codes)
-        }
+            "X-Recovery-Codes": ",".join(recovery_codes),
+        },
     )
 
 
 ## Verify 2FA code
-@app.post(
-    "/verify-2fa",
-    tags=["Auth"]
-)
+@app.post("/verify-2fa", tags=["Auth"])
 async def verify_2fa(
-    code: str = Body(
-        ...,
-        embed=True
-    ),
-    user: User = Depends(current_active_user)
-):
+    user: Annotated[User, Depends(current_active_user)],
+    code: str = Body(..., embed=True),
+) -> dict[str, bool]:
     if not user.two_fa_secret:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA not set up"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="2FA not set up"
         )
 
     two_fa = TwoFactorAuth(user.two_fa_secret)
@@ -158,36 +139,22 @@ async def verify_2fa(
 
 
 ## Use recovery code
-@app.post(
-    "/recovery-codes",
-    tags=["Auth"]
-)
+@app.post("/recovery-codes", tags=["Auth"])
 async def use_recovery_code(
-    code: str = Body(
-        ...,
-        embed=True
-    ),
-    user: User = Depends(current_active_user)
-):
+    user: Annotated[User, Depends(current_active_user)],
+    code: str = Body(..., embed=True),
+) -> dict[str, bool]:
     async with async_session_maker() as session:
         # Get fresh user instance from database
-        db_user = await session.get(
-            User,
-            user.id
-        )
+        db_user = await get_user_row(session, user.id)
 
         if not db_user.recovery_codes or code not in db_user.recovery_codes:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid recovery code"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid recovery code"
             )
 
         # Remove used recovery code
-        updated_codes = [
-            c
-            for c in db_user.recovery_codes
-            if c != code
-        ]
+        updated_codes = [c for c in db_user.recovery_codes if c != code]
         db_user.recovery_codes = updated_codes
         session.add(db_user)
         await session.commit()
@@ -196,41 +163,30 @@ async def use_recovery_code(
 
 
 ## 2FA protected route example
-@app.get(
-    "/protected-route",
-    tags=["Protected"]
-)
+@app.get("/protected-route", tags=["Protected"])
 async def protected_route(
-    user: User = Depends(current_active_user),
-    x_2fa_code: str = Header(
-        ...,
-        alias="X-2FA-Code"
-    )
-):
+    user: Annotated[User, Depends(current_active_user)],
+    x_2fa_code: Annotated[str, Header(alias="X-2FA-Code")],
+) -> dict[str, str]:
     # Explicit 2FA verification for demonstration
     if not user.two_fa_secret:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="2FA not configured"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="2FA not configured"
         )
 
     if not TwoFactorAuth(user.two_fa_secret).verify_code(x_2fa_code):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid 2FA code"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid 2FA code"
         )
 
     return {
         "message": "You've accessed a protected route with valid 2FA!",
-        "user_id": str(user.id)
+        "user_id": str(user.id),
     }
 
 
 # Run the API server
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8000
-    )
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
