@@ -1,19 +1,22 @@
-import pytest
-from fastapi import Request, Response, status, HTTPException
-from two_fast_auth import TwoFactorMiddleware
 import pyotp
+import pytest
+from conftest import MockUser, UserSecretLookup
+from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.testclient import TestClient
+
+from two_fast_auth import TwoFactorMiddleware
 
 
 @pytest.mark.asyncio
-async def test_middleware_excluded_paths(test_app, test_client, mock_get_user_secret):
-    user = type("User", (), {"id": "test_user", "is_authenticated": False})()
-
+async def test_middleware_excluded_paths(
+    test_app: FastAPI, test_client: TestClient, mock_get_user_secret: UserSecretLookup
+) -> None:
     @test_app.get("/excluded")
-    async def excluded_route():
+    async def excluded_route() -> dict[str, str]:
         return {"message": "OK"}
 
     @test_app.get("/protected")
-    async def protected_route(request: Request):
+    async def protected_route(request: Request) -> dict[str, str]:
         return {"message": "Protected"}
 
     test_app.add_middleware(
@@ -30,8 +33,10 @@ async def test_middleware_excluded_paths(test_app, test_client, mock_get_user_se
 
 
 @pytest.mark.asyncio
-async def test_middleware_authentication_flow(two_factor_middleware, mock_user):
-    async def async_call_next(request):
+async def test_middleware_authentication_flow(
+    two_factor_middleware: TwoFactorMiddleware, mock_user: MockUser
+) -> None:
+    async def async_call_next(request: Request) -> Response:
         return Response("OK", status_code=status.HTTP_200_OK)
 
     valid_code = pyotp.TOTP("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP").now()
@@ -52,7 +57,9 @@ async def test_middleware_authentication_flow(two_factor_middleware, mock_user):
 
 
 @pytest.mark.asyncio
-async def test_middleware_protected_paths(test_app, mock_get_user_secret):
+async def test_middleware_protected_paths(
+    test_app: FastAPI, mock_get_user_secret: UserSecretLookup
+) -> None:
     user = type(
         "User",
         (),
@@ -64,7 +71,7 @@ async def test_middleware_protected_paths(test_app, mock_get_user_secret):
     )()
 
     @test_app.get("/protected")
-    async def protected_route(request: Request):
+    async def protected_route(request: Request) -> dict[str, str]:
         return {"message": "Protected"}
 
     middleware = TwoFactorMiddleware(
@@ -81,8 +88,11 @@ async def test_middleware_protected_paths(test_app, mock_get_user_secret):
         }
     )
 
+    async def sync_call_next(request: Request) -> Response:
+        return Response("OK")
+
     with pytest.raises(HTTPException) as exc:
-        await middleware.dispatch(request, lambda r: Response("OK"))
+        await middleware.dispatch(request, sync_call_next)
     assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
 
     valid_code = pyotp.TOTP("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP").now()
@@ -96,7 +106,7 @@ async def test_middleware_protected_paths(test_app, mock_get_user_secret):
         }
     )
 
-    async def async_call_next(request):
+    async def async_call_next(request: Request) -> Response:
         return Response("OK", status_code=status.HTTP_200_OK)
 
     response = await middleware.dispatch(valid_request, async_call_next)
@@ -104,13 +114,15 @@ async def test_middleware_protected_paths(test_app, mock_get_user_secret):
 
 
 @pytest.mark.asyncio
-async def test_middleware_scope_get_scenarios(test_app, mock_get_user_secret):
+async def test_middleware_scope_get_scenarios(
+    test_app: FastAPI, mock_get_user_secret: UserSecretLookup
+) -> None:
     """Test all possible request.scope.get scenarios"""
     middleware = TwoFactorMiddleware(
         app=test_app, get_user_secret_callback=mock_get_user_secret, excluded_paths=[]
     )
 
-    async def call_next(request):
+    async def call_next(request: Request) -> Response:
         return Response("OK", status_code=status.HTTP_200_OK)
 
     # Scenario 1: scope with no user key
