@@ -2,6 +2,8 @@
 Example FastAPI app with 2FA middleware
 """
 
+from typing import Annotated
+
 # You'll have to create and import
 # your own user models, functions, db
 # and other dependencies.
@@ -10,27 +12,27 @@ Example FastAPI app with 2FA middleware
 # don't need a fully customized user
 # management system.
 from database import async_session_maker
-from users import (
-    User,
-    UserRead,
-    UserCreate,
-    fastapi_users,
-    auth_backend,
-    current_active_user,
-)
 
 # Import FastAPI and Two-Fast-Auth
-from fastapi import FastAPI, Body, Depends, Header, HTTPException, status
+from fastapi import Body, Depends, FastAPI, Header, HTTPException, status
 from fastapi.responses import StreamingResponse
-from two_fast_auth import TwoFactorMiddleware, TwoFactorAuth
+from users import (
+    User,
+    UserCreate,
+    UserRead,
+    auth_backend,
+    current_active_user,
+    fastapi_users,
+)
 
+from two_fast_auth import TwoFactorAuth, TwoFactorMiddleware
 
 # Create FastAPI instance
 app = FastAPI()
 
 
 # Get user secret callback for middleware
-async def get_user_secret_callback(user_id: str) -> str:
+async def get_user_secret_callback(user_id: str) -> str | None:
     async with async_session_maker() as session:
         user = await session.get(User, user_id)
         return user.two_fa_secret if user else None
@@ -73,7 +75,9 @@ app.include_router(
 # Endpoints examples
 ## Setup 2FA
 @app.post("/setup-2fa", tags=["Auth"])
-async def setup_2fa(user: User = Depends(current_active_user)):
+async def setup_2fa(
+    user: Annotated[User, Depends(current_active_user)],
+) -> StreamingResponse:
     # Generate new 2FA secret
     two_fa = TwoFactorAuth()
 
@@ -106,8 +110,9 @@ async def setup_2fa(user: User = Depends(current_active_user)):
 ## Verify 2FA code
 @app.post("/verify-2fa", tags=["Auth"])
 async def verify_2fa(
-    code: str = Body(..., embed=True), user: User = Depends(current_active_user)
-):
+    user: Annotated[User, Depends(current_active_user)],
+    code: str = Body(..., embed=True),
+) -> dict[str, bool]:
     if not user.two_fa_secret:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="2FA not set up"
@@ -122,8 +127,9 @@ async def verify_2fa(
 ## Use recovery code
 @app.post("/recovery-codes", tags=["Auth"])
 async def use_recovery_code(
-    code: str = Body(..., embed=True), user: User = Depends(current_active_user)
-):
+    user: Annotated[User, Depends(current_active_user)],
+    code: str = Body(..., embed=True),
+) -> dict[str, bool]:
     async with async_session_maker() as session:
         # Get fresh user instance from database
         db_user = await session.get(User, user.id)
@@ -145,9 +151,9 @@ async def use_recovery_code(
 ## 2FA protected route example
 @app.get("/protected-route", tags=["Protected"])
 async def protected_route(
-    user: User = Depends(current_active_user),
-    x_2fa_code: str = Header(..., alias="X-2FA-Code"),
-):
+    user: Annotated[User, Depends(current_active_user)],
+    x_2fa_code: Annotated[str, Header(alias="X-2FA-Code")],
+) -> dict[str, str]:
     # Explicit 2FA verification for demonstration
     if not user.two_fa_secret:
         raise HTTPException(

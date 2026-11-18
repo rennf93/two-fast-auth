@@ -51,6 +51,9 @@ dev = [
     "ruff",
     "safety",
     # "semgrep",
+    "types-qrcode",
+    "types-setuptools",
+    "uvicorn",
     "vulture",
     "xenon",
 ]
@@ -247,6 +250,9 @@ per_rule_ignores = { "DEP002" = [
     "radon",
     "ruff",
     "safety",
+    "types-qrcode",
+    "types-setuptools",
+    "uvicorn",
     "vulture",
     "xenon",
 ] }
