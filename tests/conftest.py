@@ -2,11 +2,7 @@ from cryptography.fernet import Fernet
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from two_fast_auth import (
-    TwoFactorAuth,
-    TwoFactorMiddleware
-)
-
+from two_fast_auth import TwoFactorAuth, TwoFactorMiddleware
 
 
 @pytest.fixture
@@ -17,28 +13,18 @@ def two_factor_auth():
 @pytest.fixture
 def mock_get_user_secret():
     """Fixture that returns the mock secret lookup function"""
-    secrets = {
-        "user_with_2fa": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
-        "user_no_2fa": None
-    }
+    secrets = {"user_with_2fa": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP", "user_no_2fa": None}
 
-    async def _mock_get_user_secret(
-        user_id: str
-    ):
+    async def _mock_get_user_secret(user_id: str):
         return secrets.get(user_id)
 
     return _mock_get_user_secret
 
 
 @pytest.fixture
-def two_factor_middleware(
-    test_app,
-    mock_get_user_secret
-):
+def two_factor_middleware(test_app, mock_get_user_secret):
     return TwoFactorMiddleware(
-        app=test_app,
-        get_user_secret_callback=mock_get_user_secret,
-        excluded_paths=[]
+        app=test_app, get_user_secret_callback=mock_get_user_secret, excluded_paths=[]
     )
 
 
@@ -78,6 +64,5 @@ def invalid_encryption_key():
 @pytest.fixture
 def encrypted_secret(valid_encryption_key):
     return TwoFactorAuth.encrypt_secret(
-        "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
-        valid_encryption_key
+        "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP", valid_encryption_key
     )

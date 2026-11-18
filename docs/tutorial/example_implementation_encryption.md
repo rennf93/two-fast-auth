@@ -17,8 +17,9 @@ app.add_middleware(
     TwoFactorMiddleware,
     get_user_secret_callback=get_encrypted_secret,
     encryption_key=ENCRYPTION_KEY,
-    excluded_paths=["/setup-2fa", "/verify-2fa"]
+    excluded_paths=["/setup-2fa", "/verify-2fa"],
 )
+
 
 async def get_encrypted_secret(user_id: str) -> str:
     # Return encrypted secret from your database
@@ -30,15 +31,13 @@ async def get_encrypted_secret(user_id: str) -> str:
 @app.post("/setup-2fa")
 async def setup_2fa_endpoint(user: User = Depends(current_user)):
     tfa = TwoFactorAuth()
-    encrypted_secret = TwoFactorAuth.encrypt_secret(
-        tfa.secret,
-        ENCRYPTION_KEY
-    )
+    encrypted_secret = TwoFactorAuth.encrypt_secret(tfa.secret, ENCRYPTION_KEY)
     await store_encrypted_secret(user.id, encrypted_secret)
     return {
         "qr_code": tfa.generate_qr_code(user.email),
-        "encrypted_secret": encrypted_secret
+        "encrypted_secret": encrypted_secret,
     }
+
 
 @app.post("/verify-2fa")
 async def verify_2fa_endpoint(code: str, user: User = Depends(current_user)):
