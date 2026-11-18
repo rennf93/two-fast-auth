@@ -18,7 +18,7 @@ def two_factor_auth():
 def mock_get_user_secret():
     """Fixture that returns the mock secret lookup function"""
     secrets = {
-        "user_with_2fa": "SECRETEXAMPLE",
+        "user_with_2fa": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
         "user_no_2fa": None
     }
 
@@ -59,7 +59,7 @@ def mock_user():
         def __init__(self):
             self.id = "user_with_2fa"
             self.email = "user@example.com"
-            self.two_fa_secret = "SECRETEXAMPLE"
+            self.two_fa_secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
             self.is_authenticated = True
 
     return MockUser()
@@ -78,6 +78,6 @@ def invalid_encryption_key():
 @pytest.fixture
 def encrypted_secret(valid_encryption_key):
     return TwoFactorAuth.encrypt_secret(
-        "SECRETEXAMPLE",
+        "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
         valid_encryption_key
     )

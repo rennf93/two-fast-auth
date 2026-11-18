@@ -58,7 +58,7 @@ async def test_middleware_authentication_flow(
             status_code=status.HTTP_200_OK
         )
 
-    valid_code = pyotp.TOTP("SECRETEXAMPLE").now()
+    valid_code = pyotp.TOTP("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP").now()
     mock_user.id = "user_with_2fa"
     response = await two_factor_middleware.dispatch(
         Request(scope={
@@ -86,7 +86,7 @@ async def test_middleware_protected_paths(
     user = type("User", (), {
         "id": "user_with_2fa",
         "is_authenticated": True,
-        "two_fa_secret": "SECRETEXAMPLE"
+        "two_fa_secret": "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
     })()
 
     @test_app.get("/protected")
@@ -114,7 +114,7 @@ async def test_middleware_protected_paths(
         )
     assert exc.value.status_code == status.HTTP_401_UNAUTHORIZED
 
-    valid_code = pyotp.TOTP("SECRETEXAMPLE").now()
+    valid_code = pyotp.TOTP("JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP").now()
     valid_request = Request(scope={
         "type": "http",
         "method": "GET",

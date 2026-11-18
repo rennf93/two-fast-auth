@@ -17,7 +17,7 @@ class TestEncryptionDecryption:
     """Test suite for encryption/decryption functionality"""
 
     @pytest.mark.parametrize("secret", [
-        "SECRETEXAMPLE123",
+        "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP123",
         "ANOTHER_SECRET_KEY",
         "TEST!@#$%^&*()"
     ])
@@ -39,7 +39,7 @@ class TestEncryptionDecryption:
 
     def test_encrypt_without_key(self):
         """Test encryption without key returns plaintext"""
-        secret = "SECRETEXAMPLE"
+        secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
         result = TwoFactorAuth.encrypt_secret(
             secret,
             None
@@ -65,7 +65,7 @@ class TestEncryptionDecryption:
         valid_encryption_key
     ):
         """Test both string and bytes key formats"""
-        secret = "SECRETEXAMPLE"
+        secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
         key = (
             valid_encryption_key.decode()
             if key_type == str
@@ -95,7 +95,7 @@ class TestEncryptionDecryption:
         valid_encryption_key
     ):
         """Test decryption with incorrect key"""
-        secret = "SECRETEXAMPLE"
+        secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP"
         encrypted = TwoFactorAuth.encrypt_secret(
             secret,
             valid_encryption_key
@@ -116,7 +116,7 @@ class TestEncryptionDecryption:
     ):
         """Test decryption of modified ciphertext"""
         encrypted = TwoFactorAuth.encrypt_secret(
-            "SECRETEXAMPLE",
+            "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP",
             valid_encryption_key
         )
         tampered = encrypted[:-1] + "X"
