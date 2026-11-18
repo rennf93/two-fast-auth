@@ -2,6 +2,7 @@
 Example FastAPI app with 2FA middleware
 """
 
+import uuid
 from typing import Annotated
 
 from cryptography.fernet import Fernet
@@ -13,13 +14,12 @@ from cryptography.fernet import Fernet
 # FastAPI Users and SQLAlchemy if you
 # don't need a fully customized user
 # management system.
-from database import async_session_maker
+from database import User, async_session_maker, get_user_row
 
 # Import FastAPI and Two-Fast-Auth
 from fastapi import Body, Depends, FastAPI, Header, HTTPException, status
 from fastapi.responses import StreamingResponse
 from users import (
-    User,
     UserCreate,
     UserRead,
     auth_backend,
@@ -39,8 +39,8 @@ app = FastAPI()
 # Get user secret callback for middleware
 async def get_user_encrypted_secret_callback(user_id: str) -> str | None:
     async with async_session_maker() as session:
-        user = await session.get(User, user_id)
-        return user.two_fa_secret if user else None
+        user = await session.get(User, uuid.UUID(user_id))
+        return user.encrypted_secret if user else None
 
 
 # Add 2FA middleware
@@ -95,9 +95,9 @@ async def setup_2fa(
 
     # Store secret and recovery codes in DB
     async with async_session_maker() as session:
-        db_user = await session.get(User, user.id)
+        db_user = await get_user_row(session, user.id)
         db_user.encrypted_secret = encrypted_secret
-        db_user.recovery_codes = recovery_codes
+        db_user.recovery_codes = list(recovery_codes)
         session.add(db_user)
         await session.commit()
         await session.refresh(db_user)
@@ -120,7 +120,7 @@ async def verify_2fa(
     code: str = Body(..., embed=True),
 ) -> dict[str, str]:
     async with async_session_maker() as session:
-        db_user = await session.get(User, user.id)
+        db_user = await get_user_row(session, user.id)
         if not db_user.encrypted_secret:
             raise HTTPException(status_code=400, detail="2FA not set up")
 
@@ -140,7 +140,7 @@ async def use_recovery_code(
 ) -> dict[str, bool]:
     async with async_session_maker() as session:
         # Get fresh user instance from database
-        db_user = await session.get(User, user.id)
+        db_user = await get_user_row(session, user.id)
 
         if not db_user.recovery_codes or code not in db_user.recovery_codes:
             raise HTTPException(
